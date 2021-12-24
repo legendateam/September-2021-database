@@ -1,0 +1,162 @@
+show databases;
+use chapaev;
+show tables;
+
+-- home work2
+select * from application;
+select * from client;
+select * from department;
+
+-- 1.Вибрати усіх клієнтів, чиє ім'я має менше ніж 6 символів.
+select * from client where length(FirstName) < 6;
+-- 2.Вибрати львівські відділення банку.
+select * from department where DepartmentCity="Lviv";
+-- 3.Вибрати клієнтів з вищою освітою та посортувати по прізвищу.
+select idclient, lastname, education from client where education like "h%"
+order by LastName;
+-- 4.Виконати сортування у зворотньому порядку над таблицею Заявка і вивести 5 останніх елементів.
+select * from application order by idApplication desc limit 5 offset 10;
+-- 5.Вивести усіх клієнтів, чиє прізвище закінчується на OV чи OVA.
+select * from client where firstname like "%ov" or firstname like "%ova";
+-- 6.Вивести клієнтів банку, які обслуговуються київськими відділеннями.
+select idclient,firstname,lastname,department_iddepartment,departmentcity
+from client c join department d on d.iddepartment=c.department_iddepartment
+where d.iddepartment= 1 and 4;
+
+-- 7.Знайти унікальні імена клієнтів.
+
+select distinct firstname from client;
+
+-- 8.Вивести дані про клієнтів, які мають кредит більше ніж на 5000 тисяч гривень.
+
+select idclient,firstname,lastname,city,sum,creditstate
+from client c join application a on a.client_idclient=c.idclient
+where a.sum > 5000 and a.creditstate like "not%";
+
+-- 9.Порахувати кількість клієнтів усіх відділень та лише львівських відділень.
+
+select count(*) as lvivClients,departmentcity from client c join department d on d.iddepartment=c.department_iddepartment
+where d.iddepartment=2 and 5 group by departmentcity;
+
+-- 10.Знайти кредити, які мають найбільшу суму для кожного клієнта окремо.
+
+select max(sum) as max_sum, client_idclient
+ from application a join client c on c.idclient=a.client_idclient group by client_idclient;
+
+-- 11. Визначити кількість заявок на кредит для кожного клієнта.
+
+select count(*) as numbersApplications from application group by client_idclient
+order by numbersApplications desc;
+
+-- 12. Визначити найбільший та найменший кредити.
+
+select max(sum) as max, min(sum) as min from application;
+
+-- 13. Порахувати кількість кредитів для клієнтів,які мають вищу освіту.
+
+select count(sum) as creditsNumbers
+from application a join client c on
+a.client_idclient=c.department_iddepartment where education like "h%";
+
+-- 14. Вивести дані про клієнта, в якого середня сума кредитів найвища.
+
+select avg(sum) as avg_sum,c.idclient,c.firstname,c.lastname,c.city,c.age
+from application a join client c
+on c.idclient=a.client_idclient group by c.idclient order by avg_sum desc limit 1;
+
+-- 15. Вивести відділення, яке видало в кредити найбільше грошей
+
+select sum(sum) as sumaCredit, iddepartment, departmentcity
+from department d
+join client c on c.department_iddepartment=d.iddepartment
+join application a on a.client_idclient=c.idclient
+group by iddepartment,departmentcity
+order by sumaCredit desc limit 1;
+
+-- 16. Вивести відділення, яке видало найбільший кредит.
+
+select max(sum) as max,iddepartment,departmentcity from department d
+join client c on c.department_iddepartment=d.iddepartment
+join application a on a.client_idclient=c.idclient
+group by iddepartment
+order by max desc limit 1;
+
+-- 17. Усім клієнтам, які мають вищу освіту, встановити усі їхні кредити у розмірі 6000 грн.
+update application a join client c on a.client_idclient=c.department_iddepartment
+set sum=6000 where education="high";
+
+select idclient,firstname,education,sum from client c join application a
+ on a.client_idclient=c.department_iddepartment;
+-- 18. Усіх клієнтів київських відділень пересилити до Києва.
+update client c join department d on d.iddepartment=c.department_iddepartment
+set c.city=d.departmentcity where c.department_iddepartment=1 and 4;
+
+select idclient,firstname,city,department_iddepartment,iddepartment,departmentcity
+from client c join department d on d.iddepartment=c.department_iddepartment
+where city ="Kyiv";
+
+-- 19. Видалити усі кредити, які є повернені.
+
+delete from application where CreditState like "Not%"  limit 1000;
+select * from application;
+
+-- 20. Видалити кредити клієнтів, в яких друга літера прізвища є голосною.
+
+delete application from application join client c
+on application.client_idclient=c.idclient
+where c.lastname REGEXP '^.[eyuoa].*';
+
+
+-- 21.Знайти львівські відділення, які видали кредитів на загальну суму більше ніж 5000
+
+select sum(sum) as sum,idDepartment, DepartmentCity from department d
+join client c on d.iddepartment=c.idclient
+join application a on a.client_idclient=c.idclient
+where departmentcity="lviv" and sum>5000
+group by idDepartment, DepartmentCity;
+
+-- 22.Знайти клієнтів, які повністю погасили кредити на суму більше ніж 5000
+
+select * from client c join application a on a.client_idclient=c.idclient
+where creditstate="returned" and sum > 5000;
+
+-- 23.Знайти максимальний неповернений кредит.
+
+select max(sum) as max,idapplication,sum,creditstate from application
+where creditstate="not returned" group by idapplication order by max desc limit 1;
+
+# 24.Знайти клієнта, сума кредиту якого найменша
+
+select min(sum) as min,idclient,firstname,creditstate from client c
+join application a on c.idclient=a.client_idclient
+group by idclient,firstname,creditstate
+order by min limit 1;
+
+ # 25.Знайти кредити, сума яких більша за середнє значення усіх кредитів
+select * from application where sum >
+(select avg(sum) from application);
+
+# 26. Знайти клієнтів, які є з того самого міста, що і клієнт, який взяв найбільшу кількість кредитів
+select * from client
+where City = (
+    select city from client c
+	join application a on c.idclient = a.client_idclient
+    group by idclient
+    order by count(client_idclient) desc limit 1
+);
+
+# 27. Місто клієнта з найбільшою кількістю кредитів
+
+select city from client c join application a
+on a.client_idclient=c.department_iddepartment
+ group by idclient order by count(client_idclient) desc limit 1;
+
+
+
+
+
+
+
+
+
+
